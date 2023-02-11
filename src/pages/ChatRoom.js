@@ -20,22 +20,21 @@ import {
   MDBCardHeader,
 } from "mdb-react-ui-kit";
 import { setMessage, setSelectedUser } from '../reducers/chat-room/messagesSlice';
+import store from '../app/store';
 
 let stompClient = null;
-let selectedUser;
-let usersList;
+
+
 
 const ChatRoom = () => {
+    
+    const [usersList, setUsersList] = useState([]);
+    const [selectedUser, setUser] = useState();
     //Redux
     const dispatch = useDispatch();
     const {token, userName, nickname, status, password, chatId} = useSelector(state => state.user);
     const {id, chatName} = useSelector(state => state.chatroom);
-    dispatch(setMessage({
-        from: userName,
-        to: selectedUser,
-        message: ""
-    }))
-    const {from, to, message} = useSelector(state => state.messages);
+    const {from, to, message} = store.getState().message;
 
     // React
     // const [publicChats, setPublicChats] = useState([]);
@@ -52,11 +51,11 @@ const ChatRoom = () => {
     // });
 
     // const handleMessage = (event) => {
-    //     const {value} = event.target;
+    //     const {value} = event;
     //     setUserData({...userData, "message":value});
     // }
-    // const handleUserName = (event) => {
-    //     const {value} = event.target;
+    // const handleUserName = (userName) => {
+    //     const value = userName;
     //     setUserData({...userData, "username":value});
     // }
 
@@ -149,6 +148,10 @@ const ChatRoom = () => {
     //     connect();
     // }
 
+
+
+
+    // Mine
     const changeOnline = () => {
         if (status == true) {
             dispatch(changeStatus({status:false}));
@@ -189,54 +192,64 @@ const ChatRoom = () => {
             console.log(response);
             let data = response.data;
             console.log(data);
-            let usersHtmlTemplate = [];
-            data.forEach(user => {
-                usersHtmlTemplate.push(
-                    <li className="p-2 border-bottom">
-                      <a href="#!" className="d-flex justify-content-between" onClick={selectReceiver(user.name)}>
-                        <div className="d-flex flex-row">
-                          <div className="pt-1">
-                            <h3 className="fw-bold mb-0">{user.nickname}</h3>
-                          </div>
-                        </div>
-                        <div className="pt-1">
-                        <button className = {`btn ${(user.connectedStatus)? 'btn-success': 'btn-danger'}`} 
-                        style={{borderRadius: "10em"}}>{(user.connectedStatus)? "Online": "Offline"}</button>
-                          <span className="badge bg-danger float-end">1</span>
-                        </div>
-                      </a>
-                    </li>
-            )
-            
-        });
-            let container = ReactDOM.createRoot(document.getElementById("userList")) ;
-            container.render(usersHtmlTemplate);
+            setUsersList(data);
             })
             .catch(err => {
                 console.log(err);
             });
-            
         }
 
     const selectReceiver = (name) => {
         dispatch(setSelectedUser({
             to: name
         }));
-        console.log("Selecting user: " + to);
-        selectedUser = to;
+        console.log("Selecting user: " + name);
+        setUser(name);
     }
+
+    {usersList.map( (user, index) => 
+        <li className="p-2 border-bottom" key={index}>
+              <a href="#!" className="d-flex justify-content-between" onClick={()=>selectReceiver(user.nickname)}>
+                <div className="d-flex flex-row">
+                  <div className="pt-1">
+                    <h3 className="fw-bold mb-0">{user.nickname}</h3>
+                  </div>
+                </div>
+                <div className="pt-1">
+                <button className = {`btn ${(user.connectedStatus)? 'btn-success': 'btn-danger'}`} 
+                style={{borderRadius: "10em"}}>{(user.connectedStatus)? "Online": "Offline"}</button>
+                  <span className="badge bg-danger float-end">1</span>
+                </div>
+              </a>
+            </li>
+              )}
   return (
     <MDBContainer fluid className="py-5" style={{ backgroundColor: "#eee" }}>
       <MDBRow>
         <MDBCol md="6" lg="5" xl="4" className="mb-4 mb-md-0">
           <h5 className="font-weight-bold mb-3 text-center text-lg-start">
-            Members
+            Member
           </h5>
-            <button className='position-relative start-50 top-0 mb-3 btn btn-primary' onClick={refresh}>Refresh</button>
+            <button className='btn btn-primary' onClick={refresh}>Refresh</button>
           <MDBCard>
             <MDBCardBody>
-              <MDBTypography listUnStyled className="mb-0" id="userList">
-                
+              <MDBTypography listUnStyled className="mb-0">
+              {usersList.map( (user, index) => 
+        <li className="p-2 border-bottom" key={index}>
+              <a href="#!" className="d-flex justify-content-between" onClick={()=>selectReceiver(user.nickname)}>
+                <div className="d-flex flex-row">
+                  <div className="pt-1">
+                    <h3 className="fw-bold mb-0">{user.nickname}</h3>
+                  </div>
+                </div>
+                <div className="pt-1">
+                <button className = {`btn ${(user.connectedStatus)? 'btn-success': 'btn-danger'}`} 
+                style={{borderRadius: "10em"}}>{(user.connectedStatus)? "Online": "Offline"}</button>
+                  <span className="badge bg-danger float-end">1</span>
+                </div>
+              </a>
+            </li>
+              )}
               </MDBTypography>
             </MDBCardBody>
           </MDBCard>
@@ -313,7 +326,7 @@ const ChatRoom = () => {
               </MDBCard>
             </li>
             <li className="bg-white mb-3">
-              <MDBTextArea placeholder='Message' id="textAreaExample" rows={4} />
+              <MDBTextArea placeholder={"Message to " + selectedUser} id="textAreaExample" rows={4} />
             </li>
             <MDBBtn color="info" rounded className="float-end">
               Send
@@ -322,7 +335,7 @@ const ChatRoom = () => {
         </MDBCol>
       </MDBRow>
     </MDBContainer>
-  );
+    );
 
 }
 
